@@ -1,0 +1,112 @@
+{
+  "scope": "Numerical equation checks only; not a MATLAB or GPU execution, or a tissue PSF experiment.",
+  "seed": 20260910,
+  "samples": 1000000,
+  "status": "PASS",
+  "launch_second_moments_xyz": {
+    "original": [
+      0.24997274772614111,
+      0.25020291718910287,
+      0.49982433508475604
+    ],
+    "corrected": [
+      0.33322114278865667,
+      0.33357013029491156,
+      0.33320872691643194
+    ],
+    "isotropic_target": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ]
+  },
+  "objective": {
+    "NA": 1.0,
+    "medium_index": 1.33,
+    "correct_max_angle_deg": 48.753466631327235,
+    "original_min_angle_deg": 41.24653336867277,
+    "angle_table": [
+      {
+        "angle_deg": 0,
+        "original_accepts_limit": false,
+        "correct_accepts": true
+      },
+      {
+        "angle_deg": 10,
+        "original_accepts_limit": false,
+        "correct_accepts": true
+      },
+      {
+        "angle_deg": 40,
+        "original_accepts_limit": false,
+        "correct_accepts": true
+      },
+      {
+        "angle_deg": 45,
+        "original_accepts_limit": true,
+        "correct_accepts": true
+      },
+      {
+        "angle_deg": 48,
+        "original_accepts_limit": true,
+        "correct_accepts": true
+      },
+      {
+        "angle_deg": 50,
+        "original_accepts_limit": true,
+        "correct_accepts": false
+      },
+      {
+        "angle_deg": 60,
+        "original_accepts_limit": true,
+        "correct_accepts": false
+      },
+      {
+        "angle_deg": 80,
+        "original_accepts_limit": true,
+        "correct_accepts": false
+      },
+      {
+        "angle_deg": 90,
+        "original_accepts_limit": true,
+        "correct_accepts": false
+      }
+    ]
+  },
+  "ballistic_fraction_of_all_launched_photons": {
+    "corrected_numeric": 0.170158,
+    "correct_analytic": 0.17034983776033258,
+    "original_NA_on_isotropic_source_numeric": 0.375865,
+    "original_NA_on_isotropic_source_analytic": 0.37593984962406013,
+    "original_launch_and_NA_numeric": 0.271098,
+    "original_launch_and_NA_analytic": 0.2708525923962624
+  },
+  "snell_nt_1p5_nm_1": {
+    "incident_deg": [
+      0.0,
+      30.0,
+      50.0
+    ],
+    "transmitted_deg": [
+      0.0,
+      48.59037789072914,
+      null
+    ],
+    "correct_transmits": [
+      true,
+      true,
+      false
+    ],
+    "original_transmits_oblique_rays": [
+      false,
+      true
+    ]
+  },
+  "unmodified_HG_g_0p9": {
+    "mean_cos": 0.9001245770966505,
+    "target_mean_cos": 0.9,
+    "mean_P2": 0.8101561024010216,
+    "target_mean_P2": 0.81
+  },
+  "small_g_rearrangement_max_error": 1.2528769254699368e-15
+}

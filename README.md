@@ -22,6 +22,16 @@ This repository contains the implementation of the physics-informed forward mode
 
 ![Figure1_method](https://github.com/Mithunjha/DEEP-squared/assets/67052077/d0deba89-53f6-48b5-b766-ec86b3867423)
 
+## Forward-model scattering corrections
+
+This branch corrects isotropic photon launch, objective-angle acceptance,
+Snell refraction, scattering-direction edge cases, and tissue-parameter
+forwarding. The pinned Monte Carlo MATLAB runtime is tracked directly in
+this repository, including its original license. See
+[the scattering audit](fwd_model/SCATTERING_AUDIT.md) for evidence, regression
+tests, and validation limits. Existing scattering PSFs must be regenerated
+to incorporate these corrections.
+
 ## Dataset
 Find the dataset used in our work at : [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8161051.svg)](https://doi.org/10.5281/zenodo.8161051)
 
@@ -67,5 +77,3 @@ The quantitative and qualitative output for the **Beads 4 Scattering Lengths** d
 **PSNR** : 39.1606 (1.8238)
 
 ![20_prediction](https://github.com/Mithunjha/DEEP-squared/assets/67052077/df73007b-56d1-45c5-9285-46fad918781d)
-
-

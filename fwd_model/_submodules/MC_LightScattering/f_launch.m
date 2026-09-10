@@ -7,12 +7,14 @@ function [x, y, z, ux, uy, uz, L, atSurf] = f_launch(pram)
 
   L     = zeros(pram.Nphotons,1);                             % [um]      path-length for each photon
 
-  theta = rand(pram.Nphotons,1)*pi;                           % [rad]     spherical coordinates, launch initialization
-  psi   = rand(pram.Nphotons,1)*2*pi;
+  % An isotropic point source is uniform in solid angle, not in theta.
+  % dOmega = dpsi * d(cos(theta)); see OMLC mc321.c, LAUNCH.
+  uz       = 2*rand(pram.Nphotons,1)-1;
+  sintheta = sqrt(max(0,1-uz.^2));
+  psi      = rand(pram.Nphotons,1)*2*pi;
 
-  ux    = sin(theta).*cos(psi);                               %           propagation direction vectors
-  uy    = sin(theta).*sin(psi);
-  uz    = cos(theta); 
+  ux    = sintheta.*cos(psi);                                 % propagation direction cosines
+  uy    = sintheta.*sin(psi);
 
   if pram.useGpu == 1
     x   = gpuArray(x );
