@@ -32,6 +32,11 @@ this repository, including its original license. See
 tests, and validation limits. Existing scattering PSFs must be regenerated
 to incorporate these corrections.
 
+Open the executed [visual walkthrough notebook](fwd_model/notebooks/Scattering_Fixes_Visual_Walkthrough.ipynb)
+for before/after angular plots and a small NumPy Monte Carlo kernel comparison.
+It runs with NumPy and Matplotlib and includes its figure outputs. Its Python
+simulation is separate from validation of the MATLAB/GPU implementation.
+
 ## Dataset
 Find the dataset used in our work at : [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8161051.svg)](https://doi.org/10.5281/zenodo.8161051)
 

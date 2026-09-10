@@ -137,6 +137,16 @@ python fwd_model/tests/angular_reference_checks.py --output angular_reference_re
 
 ## Model boundaries and consequences
 
+The executed [visual walkthrough](notebooks/Scattering_Fixes_Visual_Walkthrough.ipynb)
+adds six figures and a self-contained NumPy reproduction of the original and
+corrected transport equations. Its seeded diagnostic uses 40,000 photons,
+300 hops, a source depth of 350 micrometers, and the default tissue/NA values.
+It compares launch statistics, aperture geometry, refraction, numerical edge
+cases, four combinations of transport and collection, and absolute collection
+versus conditional radial spread. Its outputs are embedded in the notebook.
+This is a finite Python experiment, not an execution of the MATLAB code or a
+replacement for a convergence study or production PSF regeneration.
+
 - This remains a homogeneous, scattering-only half-space model with a finite
   number of hops. Absorption, heterogeneous tissue, and convergence with
   `NtimePts` were not added or validated.
