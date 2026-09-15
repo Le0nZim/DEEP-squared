@@ -1,0 +1,40 @@
+# Running the DEEP2 PSF comparison
+
+Read `experiments/depth/README.md` and follow its commands literally. The user
+is testing whether the scattering corrections improve DEEP2 at and beyond
+the paper's experimental depth limit.
+
+- Work on `experiments/psf-depth-comparison`. Do not use `run.py`, `validation.py`,
+  or `fwd_model/main.m` for this experiment; those are historical scripts.
+- Use `depth_study.py`. Start with `doctor` and `plan`, then run the requested
+  config. `run` downloads verified source data, generates old/new native MATLAB
+  PSFs and measurements, trains every job sequentially, evaluates, and reports.
+- MATLAB plus the documented toolboxes and a compatible NVIDIA GPU are required
+  for generation. If MATLAB is missing, report that concrete dependency. Do not
+  replace it with a Gaussian blur, the notebook's demonstration simulator,
+  random data, pretrained weights, a different architecture, or a skipped stage.
+- The network must remain `Modules.model.UNet`, the original 13,424,353-parameter
+  scSE-UNet with 32 patterns. `+legacy_mc` contains byte-exact old transport code;
+  do not repair it. Corrected transport is in the existing `fwd_model` subtree.
+- Default depths are 2/4/6/8/10 SLS, or 100/200/300/400/500 um at mus=200 cm^-1.
+  The figure shows 2/4 SLS. Experimental failure was reported at 6 SLS; the paper
+  already succeeded in simulation at 6 SLS.
+- Keep seeds, objects, train/val/test splits, patterns, camera implementation,
+  loss, and training settings paired. Do not train on the test partition, compute
+  normalization from test data, tune on experimental test FOVs, or choose a
+  different checkpoint using their appearance.
+- The pilot config is only a pipeline check. Do not report its few-photon,
+  five-epoch results as the completed scientific experiment. Do not silently
+  reduce production photon counts, epochs, spatial resolution, depths, or seeds.
+- Use the same config to resume. The runner records source/config fingerprints,
+  completed samples, completed PSF batches, and epoch checkpoints. Editing the
+  config/code creates a different run directory by design. Never mark unfinished
+  files complete or reuse artifacts by manually changing their provenance.
+- Report results on identical test inputs: all four train/test PSF combinations,
+  and the same experimental FOVs for both models. Widefield images and DEEP
+  reconstructions are not ground truth. Do not fabricate experimental PSNR/SSIM.
+- Inspect PSF convergence and fixed-source results before claiming a depth gain.
+  Simulation success alone cannot establish that experimental mismatch is fixed.
+- Keep raw data, generated HDF5/MAT files, checkpoints, and results out of git.
+  Summarize the completed job count, failures, report path, and remaining native
+  validation requirements when handing work back.

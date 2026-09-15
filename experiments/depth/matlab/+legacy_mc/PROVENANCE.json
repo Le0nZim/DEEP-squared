@@ -1,0 +1,12 @@
+{
+  "source_repository": "https://github.com/Le0nZim/DEEP-squared",
+  "pre_correction_commit": "757aefdc1b3ea94c600b9ec4d176e22198f9ff86",
+  "upstream_mc_commit": "7b0ed3d2a5c2c48178e7aa15591208b93294be26",
+  "files": {
+    "f_launch.m": "82e5aa1ed1a2f17441bd63f19c1c476e7582f200eaba616a326afe89e1774c34",
+    "f_hop.m": "8f3b4f45725fe856be8eb56478692029eed412ece1defb0d3fecfe72c953541a",
+    "f_spin.m": "978e9776555a9d5a32a878ad32f8468b4fa804707ec7047b93330694682b0b7a",
+    "f_backProp.m": "c82296b0baa27244dc573c734c854ea53b4d691cff8fc1f1e3c821d52843925c",
+    "LICENSE": "6e2362343dfeb07aca7b085f3d174b30a84684277082bbbffeb346c306932c8d"
+  }
+}

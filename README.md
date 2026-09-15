@@ -2,6 +2,25 @@
 
 Official implementation of "DEEP-squared: deep learning powered De-scattering with Excitation Patterning" (Light: Science & Applications, 2023).
 
+## Controlled old/new PSF depth comparison
+
+See **[the depth-study instructions](experiments/depth/README.md)** for automated
+setup, original/corrected MATLAB PSF generation, paired training of the original
+DEEP2 scSE-UNet at **2/4/6/8/10 scattering lengths**, cross-simulator evaluation,
+shared experimental reconstructions, resumable jobs, and comparison reports.
+Agent instructions are in [AGENTS.md](AGENTS.md).
+
+```bash
+bash experiments/depth/setup.sh
+source .venv-depth/bin/activate
+python depth_study.py run --config experiments/depth/configs/paper_depths.json --device cuda:0
+```
+
+MATLAB/toolboxes and a compatible GPU are required for native generation.
+The paper's experimental limit was 4 SLS (failure at 6), while its simulated
+validation already reached 6 SLS. The new pipeline is prepared for testing that
+gap; scientific outcomes have not yet been established.
+
 ## Citation
 If you find our work or this repository useful, please consider giving a star ⭐ and a citation.
 

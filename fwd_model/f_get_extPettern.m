@@ -1,6 +1,9 @@
 
 function [E Y_exp X_refs pram] = f_get_extPettern(pram)
 
+  pattern_root = './_extPatternsets';
+  if isfield(pram,'asset_dir'), pattern_root = pram.asset_dir; end
+
   switch pram.pattern_typ
     case 'dmd_sim_rnd'                      
       E     = single(rand([pram.Ny pram.Nx pram.Nt])>0.5); % for DMDs
@@ -17,7 +20,7 @@ function [E Y_exp X_refs pram] = f_get_extPettern(pram)
       X_refs= [];
       pram  = pram;
     case 'dmd_exp_tfm_beads_7sls_20201219'  
-      load('./_extPatternsets/dmd_exp_tfm_beads_7sls_20201219.mat')
+      load(fullfile(pattern_root,'dmd_exp_tfm_beads_7sls_20201219.mat'))
       
       y_inds  = size(Data.Ex,1)-pram.Ny+1:size(Data.Ex,1);      % select the lower left coner as it's brighter
       x_inds  = 1:pram.Nx;
@@ -56,7 +59,7 @@ function [E Y_exp X_refs pram] = f_get_extPettern(pram)
       pram.cam_N_gainStages = round(log(pram.cam_EMgain)/log(1+pram.cam_Brnuli_alpha)); 
                                                               %             Number of Em-gain stages              
     case 'dmd_exp_tfm_mouse_20201224_sf'    
-      load('./_extPatternsets/dmd_exp_tfm_mouse_20201224.mat')
+      load(fullfile(pattern_root,'dmd_exp_tfm_mouse_20201224.mat'))
       
       pram.z0_um  = -1;                                   % [um]        surface is 0 um -ve is below the surface
       pram.Nx     = min(size(Data.Ex,1),size(Data.Ex,2)); %             make square image
@@ -103,7 +106,7 @@ function [E Y_exp X_refs pram] = f_get_extPettern(pram)
       pram.cam_N_gainStages       = round(log(pram.cam_EMgain)/log(1+pram.cam_Brnuli_alpha)); 
                                                                     %             Number of Em-gain stages
     case 'dmd_exp_tfm_mouse_20201224_100um' 
-      load('./_extPatternsets/dmd_exp_tfm_mouse_20201224.mat')
+      load(fullfile(pattern_root,'dmd_exp_tfm_mouse_20201224.mat'))
       
       pram.z0_um                  = -100;                                 % [um]        surface is 0 um -ve is below the surface
       pram.Nx                     = min(size(Data.Ex,1),size(Data.Ex,2)); %             make square image
@@ -156,7 +159,7 @@ function [E Y_exp X_refs pram] = f_get_extPettern(pram)
       pram.cam_N_gainStages       = round(log(pram.cam_EMgain)/log(1+pram.cam_Brnuli_alpha)); 
                                                                     %             Number of Em-gain stages      
     case 'dmd_exp_tfm_mouse_20201224_200um' 
-      load('./_extPatternsets/dmd_exp_tfm_mouse_20201224.mat')
+      load(fullfile(pattern_root,'dmd_exp_tfm_mouse_20201224.mat'))
       
       pram.z0_um                  = -200;                                 % [um]        surface is 0 um -ve is below the surface      
       pram.Nx                     = min(size(Data.Ex,1),size(Data.Ex,2)); %             make square image
@@ -209,7 +212,7 @@ function [E Y_exp X_refs pram] = f_get_extPettern(pram)
       pram.cam_N_gainStages       = round(log(pram.cam_EMgain)/log(1+pram.cam_Brnuli_alpha)); 
                                                                     %             Number of Em-gain stages
     case 'dmd_exp_tfm_mouse_20201224_300um' 
-      load('./_extPatternsets/dmd_exp_tfm_mouse_20201224.mat')
+      load(fullfile(pattern_root,'dmd_exp_tfm_mouse_20201224.mat'))
 
       pram.z0_um                  = -300;                                 % [um]        surface is 0 um -ve is below the surface      
       pram.Nx                     = min(size(Data.Ex,1),size(Data.Ex,2)); %             make square image
@@ -268,7 +271,7 @@ function [E Y_exp X_refs pram] = f_get_extPettern(pram)
       pram.cam_N_gainStages       = round(log(pram.cam_EMgain)/log(1+pram.cam_Brnuli_alpha));
                                                                     %             Number of Em-gain stages
     case 'dmd_exp_tfm_mouse_20201224_350um' 
-      load('./_extPatternsets/dmd_exp_tfm_mouse_20201224.mat')
+      load(fullfile(pattern_root,'dmd_exp_tfm_mouse_20201224.mat'))
       
       pram.z0_um                  = -350;                                 % [um]        surface is 0 um -ve is below the surface      
       pram.Nx                     = min(size(Data.Ex,1),size(Data.Ex,2)); %             make square image
@@ -327,7 +330,7 @@ function [E Y_exp X_refs pram] = f_get_extPettern(pram)
       pram.cam_N_gainStages       = round(log(pram.cam_EMgain)/log(1+pram.cam_Brnuli_alpha)); 
                                                                     %             Number of Em-gain stages
     case 'dmd_exp_tfm_mouse_20201224_400um' 
-      load('./_extPatternsets/dmd_exp_tfm_mouse_20201224.mat')
+      load(fullfile(pattern_root,'dmd_exp_tfm_mouse_20201224.mat'))
 
       pram.z0_um                  = -400;                                 % [um]        surface is 0 um -ve is below the surface      
       pram.Nx                     = min(size(Data.Ex,1),size(Data.Ex,2)); %             make square image
@@ -368,7 +371,7 @@ function [E Y_exp X_refs pram] = f_get_extPettern(pram)
       pram.cam_N_gainStages       = round(log(pram.cam_EMgain)/log(1+pram.cam_Brnuli_alpha)); 
                                                                     %             Number of Em-gain stages
     case 'dmd_exp_tfm_mouse_20201224_all'   
-      load('./_extPatternsets/dmd_exp_tfm_mouse_20201224.mat')
+      load(fullfile(pattern_root,'dmd_exp_tfm_mouse_20201224.mat'))
       
       pram.Nx = min(size(Data.Ex,1),size(Data.Ex,2));         %             make square image
       pram.Ny = pram.Nx;

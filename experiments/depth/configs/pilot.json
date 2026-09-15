@@ -1,0 +1,70 @@
+{
+  "name": "pilot",
+  "data_dir": "data/deep2_zenodo",
+  "output_dir": "results/depth_study",
+  "depths_sls": [
+    2,
+    4,
+    6,
+    8,
+    10
+  ],
+  "seeds": [
+    100
+  ],
+  "signal_mode": "paper_peak",
+  "data": {
+    "n_patterns": 32,
+    "pattern_first_matlab": 21,
+    "crop_size": 128,
+    "counts": {
+      "train": 64,
+      "val": 16,
+      "test": 16
+    },
+    "seed": 20260915,
+    "dz_um": 1.0,
+    "split_fractions": [
+      0.6,
+      0.2,
+      0.2
+    ],
+    "source_dz_um": 1.5
+  },
+  "mc": {
+    "photons_per_batch": 100000,
+    "batches": 4,
+    "max_hops": 1000,
+    "seed": 314159,
+    "independent_test_psfs": true,
+    "convergence_center_check": false
+  },
+  "optics": {
+    "mus_cm_inv": 200,
+    "g": 0.9,
+    "nt": 1.33,
+    "nm": 1.33,
+    "na": 1.0,
+    "lambda_ex_um": 0.8,
+    "lambda_em_um": 0.59,
+    "sampling_factor": 2,
+    "axial_planes": 100,
+    "theta_samples": 400,
+    "row_chunk": 16,
+    "gpu_index": 1
+  },
+  "training": {
+    "epochs": 5,
+    "batch_size": 4,
+    "learning_rate": 0.001,
+    "loss": "generalized_kl",
+    "workers": 0
+  },
+  "evaluation": {
+    "save_examples": 4
+  },
+  "extension": {
+    "unmeasured_peak_reference_sls": 8,
+    "note": "At 10 SLS, paper_peak holds the measured 8-SLS peak and camera settings; this is an optimistic brightness-controlled assumption, not a measured 500-um SNR."
+  }
+}

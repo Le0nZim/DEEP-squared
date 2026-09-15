@@ -22,7 +22,7 @@ class SCSEBlock(nn.Module):
         chn_se = torch.mul(x, chn_se)
         spa_se = torch.sigmoid(self.spatial_se(x))
         spa_se = torch.mul(x, spa_se)
-        return torch.add(chn_se, 1, spa_se)
+        return torch.add(chn_se, spa_se)
 
 
 class double_conv(nn.Module):
@@ -79,7 +79,7 @@ class up(nn.Module):
 
     def forward(self, x1, x2):
         x1 = self.up(x1)
-        x2 = F.upsample(x2, (x1.size(2), x1.size(3)), mode='bilinear')
+        x2 = F.interpolate(x2, (x1.size(2), x1.size(3)), mode='bilinear', align_corners=False)
         x = torch.cat([x2, x1], dim=1)
         x = self.conv(x)
         x = self.SCSE(x)
@@ -120,5 +120,5 @@ class UNet(nn.Module):
         x8 = self.up3(x7, x2)
         x9 = self.up4(x8, x1)
         x10 = self.outc(x9)
-        x10 = F.upsample(x10, (x.size(2), x.size(3) ), mode='bilinear')
+        x10 = F.interpolate(x10, (x.size(2), x.size(3) ), mode='bilinear', align_corners=False)
         return F.relu(x10)
