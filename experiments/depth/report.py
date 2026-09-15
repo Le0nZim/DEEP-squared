@@ -10,7 +10,34 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import t
 
-from .common import VARIANTS, dataset_path, depth_tag, read_json
+from .common import CONDITIONS, VARIANTS, dataset_path, depth_tag, read_json
+
+
+CONTRASTS = {
+    "combined": {"corrected": 1, "legacy": -1},
+    "psf_with_old_camera": {"psf_only": 1, "legacy": -1},
+    "psf_with_corrected_camera": {"corrected": 1, "camera_only": -1},
+    "camera_with_old_psf": {"camera_only": 1, "legacy": -1},
+    "camera_with_corrected_psf": {"corrected": 1, "psf_only": -1},
+    "interaction": {"corrected": 1, "psf_only": -1, "camera_only": -1, "legacy": 1},
+}
+
+
+def paired_contrasts(c, means):
+    rows = []
+    for depth in c["depths_sls"]:
+        for domain in VARIANTS:
+            for label, weights in CONTRASTS.items():
+                delta = np.array([sum(weight*means[(depth, arm, domain, seed)]
+                                      for arm, weight in weights.items()) for seed in c["seeds"]])
+                for j, metric in enumerate(("mse", "psnr", "ssim")):
+                    mean = float(delta[:, j].mean())
+                    half = float(t.ppf(.975, len(delta)-1) * delta[:, j].std(ddof=1) / np.sqrt(len(delta))) if len(delta) > 1 else None
+                    rows.append({"depth_sls": depth, "test_domain": domain, "contrast": label,
+                                 "metric": metric, "difference": mean, "n_seeds": len(delta),
+                                 "ci95_low": mean-half if half is not None else "",
+                                 "ci95_high": mean+half if half is not None else ""})
+    return rows
 
 
 def make_report(c):
@@ -22,7 +49,7 @@ def make_report(c):
     by_seed = defaultdict(list)
     for r in rows:
         if int(r["has_ground_truth"]):
-            key = (float(r["depth_sls"]), r["train_psf"], r["test_domain"], int(r["seed"]))
+            key = (float(r["depth_sls"]), r["train_condition"], r["test_domain"], int(r["seed"]))
             by_seed[key].append([float(r[m]) for m in ("mse", "psnr", "ssim")])
     means = {k: np.mean(v, axis=0) for k, v in by_seed.items()}
     aggregate = defaultdict(list)
@@ -31,7 +58,7 @@ def make_report(c):
     summary = []
     for (d, train, test), values in sorted(aggregate.items()):
         arr = np.asarray(values)
-        row = {"depth_sls": d, "train_psf": train, "test_domain": test, "n_seeds": len(arr)}
+        row = {"depth_sls": d, "train_condition": train, "test_domain": test, "n_seeds": len(arr)}
         for j, metric in enumerate(("mse", "psnr", "ssim")):
             row[metric + "_mean"] = float(arr[:, j].mean())
             row[metric + "_seed_sd"] = float(arr[:, j].std(ddof=1)) if len(arr) > 1 else ""
@@ -42,27 +69,17 @@ def make_report(c):
         writer = csv.DictWriter(f, fieldnames=list(summary[0]))
         writer.writeheader()
         writer.writerows(summary)
-    deltas = []
-    for d in c["depths_sls"]:
-        for domain in VARIANTS:
-            delta = np.array([means[(d, "corrected", domain, s)] - means[(d, "legacy", domain, s)] for s in c["seeds"]])
-            for j, metric in enumerate(("mse", "psnr", "ssim")):
-                mean = float(delta[:, j].mean())
-                half = float(t.ppf(.975, len(delta)-1) * delta[:, j].std(ddof=1) / np.sqrt(len(delta))) if len(delta) > 1 else None
-                deltas.append({"depth_sls": d, "test_domain": domain, "metric": metric,
-                               "corrected_minus_legacy": mean,
-                               "ci95_low": mean-half if half is not None else "",
-                               "ci95_high": mean+half if half is not None else ""})
+    deltas = paired_contrasts(c, means)
     with open(out / "paired_differences.csv", "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(deltas[0]))
         writer.writeheader()
         writer.writerows(deltas)
-    fig, axes = plt.subplots(2, 3, figsize=(12, 7), constrained_layout=True)
+    fig, axes = plt.subplots(len(VARIANTS), 3, figsize=(13, 3.3*len(VARIANTS)), constrained_layout=True)
     for row_no, domain in enumerate(VARIANTS):
         for col, metric in enumerate(("mse", "psnr", "ssim")):
             ax = axes[row_no, col]
-            for variant, color in (("legacy", "#a65736"), ("corrected", "#167c80")):
-                entries = [r for r in summary if r["train_psf"] == variant and r["test_domain"] == domain]
+            for variant, color in zip(VARIANTS, ("#a65736", "#7254a3", "#3d789b", "#16815d")):
+                entries = [r for r in summary if r["train_condition"] == variant and r["test_domain"] == domain]
                 xs = [r["depth_sls"] for r in entries]
                 ys = [r[metric+"_mean"] for r in entries]
                 sd = [r[metric+"_seed_sd"] or 0 for r in entries]
@@ -70,7 +87,7 @@ def make_report(c):
             ax.axvline(4, color="gray", linestyle=":", alpha=.5)
             ax.set(xlabel="Depth (SLS)", ylabel=metric.upper(), title=f"Test simulator: {domain}")
             ax.grid(alpha=.2)
-            ax.legend(title="Training PSFs")
+            ax.legend(title="Training condition", fontsize=8)
     fig.suptitle("Shared test data; error bars show variation across training seeds")
     fig.savefig(out / "depth_curves.png", dpi=180)
     plt.close(fig)
@@ -87,11 +104,11 @@ def make_report(c):
                 continue
             with h5py.File(path, "r") as f:
                 has_gt = "gt" in f
-                fig, axes = plt.subplots(n, 4 if has_gt else 3, figsize=(12, 3*n), squeeze=False, constrained_layout=True)
+                fig, axes = plt.subplots(n, len(VARIANTS)+1+int(has_gt), figsize=(3*(len(VARIANTS)+1+int(has_gt)), 3*n), squeeze=False, constrained_layout=True)
                 for i in range(n):
                     avg = np.mean(f["input"][i], axis=0)
-                    images = [avg, preds[0][i], preds[1][i]]
-                    titles = ["Mean of 32 measurements", "Trained with old PSFs", "Trained with corrected PSFs"]
+                    images = [avg, *[p[i] for p in preds]]
+                    titles = ["Mean of 32 measurements", *[f"Train: {v}" for v in VARIANTS]]
                     if has_gt:
                         images.append(f["gt"][i, 0])
                         titles.append("Ground truth")
@@ -105,7 +122,7 @@ def make_report(c):
             plt.close(fig)
             panels.append(name)
     coverage = read_json(base / "evaluation/coverage.json")
-    lines = ["# DEEP2 PSF depth comparison", "", f"Experiment: `{c['experiment_id']}`", "",
+    lines = ["# DEEP2 scattering PSF and camera comparison", "", f"Experiment: `{c['experiment_id']}`", "",
              f"Signal protocol: **{c['signal_mode']}**. Loss: **{c['training']['loss']}**.", "",
              "The paper succeeded experimentally at 2/4 SLS and failed at 6 SLS; its simulations already worked at 6 SLS. "
              "8/10 SLS extend beyond its simulated validation range.", "",
@@ -114,12 +131,18 @@ def make_report(c):
              "The supplied experimental FOVs have no registered reference ground truth; their panels are qualitative. "
              "Do not treat widefield images or another reconstruction as ground truth.", "",
              f"Missing experimental depths (SLS): {coverage['missing_experimental_depths_sls']}", "",
+             "| Training condition | Scattering | Camera |", "|---|---|---|",
+             *[f"| {v} | {CONDITIONS[v]['psf']} | {CONDITIONS[v]['camera']} |" for v in VARIANTS], "",
+             "All conditions share repaired training, splitting, optics and preprocessing. Legacy refers to "
+             "the preserved scattering/camera routines; this is not a rerun of the original broken training script.", "",
+             f"Legacy Gaussian grouping: {c['camera']['legacy_batch_samples']} generated samples per batch, "
+             "independent of optimizer minibatches. Corrected read noise is independent per pixel/pattern/sample.", "",
              "![Depth curves](depth_curves.png)", "",
-             "| SLS | Train PSF | Test simulator | MSE | PSNR | SSIM |",
+             "| SLS | Train condition | Shared test condition | MSE | PSNR | SSIM |",
              "|---:|---|---|---:|---:|---:|"]
     for r in summary:
-        lines.append(f"| {r['depth_sls']:g} | {r['train_psf']} | {r['test_domain']} | {r['mse_mean']:.5g} | {r['psnr_mean']:.3f} | {r['ssim_mean']:.4f} |")
-    lines += ["", "`paired_differences.csv` reports corrected-minus-old differences on identical test inputs. "
+        lines.append(f"| {r['depth_sls']:g} | {r['train_condition']} | {r['test_domain']} | {r['mse_mean']:.5g} | {r['psnr_mean']:.3f} | {r['ssim_mean']:.4f} |")
+    lines += ["", "`paired_differences.csv` reports combined, PSF-only, camera-only and interaction contrasts on identical test inputs. "
               "95% t intervals are over training-seed means (unavailable with one seed). They do not measure biological "
               "uncertainty; source-volume crops are correlated. Predictions are not clipped or rescaled for metrics. "
               "Panels use the first configured samples, and a shared [0,1] range for reconstructions/targets.", "",

@@ -6,26 +6,27 @@
 function PSF_3D = Efficient_PSF(NA,Rindex,lambda,dx,Nx,Ny,Nz,d_segment)
 
     tic
-    % Initial parameters 
+    % Initial parameters
     alpha   = asin(NA/Rindex);      % NA = n . sin(alpha)
     % lambda  = lambda/1e3;         % convert to um if in nm
-    dy      = dx; 
+    dy      = dx;
     dz      = dx;                   % Object space resolution [um]
-    
-    x = dx*[-Nx/2:1:Nx/2-1]; 
-    y = dy*[-Ny/2:1:Ny/2-1]; 
+
+    x = dx*[-floor(Nx/2):1:ceil(Nx/2)-1];
+    y = dy*[-floor(Ny/2):1:ceil(Ny/2)-1];
     z = dz*[-Nz/2:1:Nz/2-1];        % Physical dimension of grids
 
     Ntheta = 400;                    % number of grid in polar angle, increase as Nx/dx increses
     dtheta = alpha/Ntheta;
     theta = [0:Ntheta-1]*dtheta;
- 
+
     % Electric fields related functions
-    Phi = calculate_phi(Nx); % as per now (Nx==Ny) shold be true;
+    [PX,PY] = meshgrid(x,y);
+    Phi = atan2(-PY,PX); % Same optical axis as the radial coordinate V.
     A=pi/lambda; % constant
 
     [X Y THETA] = meshgrid(x, y, theta);
-    V =(2*pi/lambda)*sqrt(X.^2+Y.^2);  
+    V =(2*pi/lambda)*sqrt(X.^2+Y.^2);
     % calculate intermediate functions that depends on x,y coordinates
     Func0 = sqrt(cos(THETA)).*sin(THETA).*(1+cos(THETA))...
         .*besselj(0,V.*sin(THETA));
@@ -36,16 +37,16 @@ function PSF_3D = Efficient_PSF(NA,Rindex,lambda,dx,Nx,Ny,Nz,d_segment)
 
     U = gpuArray((2*pi/lambda)*z);
 
-    % fpr gpu parallelization 
+    % fpr gpu parallelization
     % segment size shold match to the maximum available memory in the GPU
-    % start from a small number increase until the GPU memory error 
+    % start from a small number increase until the GPU memory error
     if isempty(d_segment)
       d_segment         = 200;
     end
-    
-    segment_start     = [1:d_segment:Nx];
+
+    segment_start     = [1:d_segment:Ny];
     segment_end       = segment_start+d_segment-1;
-    segment_end(end)  = Nx;
+    segment_end(end)  = Ny;
 
     for sNo = 1:length(segment_start)
         sNo
@@ -71,14 +72,14 @@ function PSF_3D = Efficient_PSF(NA,Rindex,lambda,dx,Nx,Ny,Nz,d_segment)
             Es = sqrt(-1) * A * I0; % scalar approximation
 
             % PSF_3D_gpu(:,:,k) = abs(Ex).^2. + abs(Ey).^2.+ abs(Ez).^2;
-            PSF_Ex_gpu(:,:,k) = Ex; 
+            PSF_Ex_gpu(:,:,k) = Ex;
             PSF_Ey_gpu(:,:,k) = Ey;
             PSF_Ez_gpu(:,:,k) = Ez;
         end
         PSF_Ex(segment_start(sNo):segment_end(sNo),:,:) = gather(PSF_Ex_gpu);
         PSF_Ey(segment_start(sNo):segment_end(sNo),:,:) = gather(PSF_Ey_gpu);
         PSF_Ez(segment_start(sNo):segment_end(sNo),:,:) = gather(PSF_Ez_gpu);
-        
+
         clear PSF_Ex_gpu
         clear PSF_Ey_gpu
         clear PSF_Ez_gpu

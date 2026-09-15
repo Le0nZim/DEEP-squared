@@ -12,7 +12,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
 from Modules.model import UNet
-from .common import VARIANTS, checkpoint_dir, dataset_path, write_json
+from .common import CONDITIONS, VARIANTS, checkpoint_dir, dataset_path, write_json
 from .data import MeasurementDataset, check_file, training_scales
 
 
@@ -110,7 +110,7 @@ def train_one(c, variant, depth, seed, device):
     val_loader = DataLoader(val, batch_size=settings["batch_size"], shuffle=False,
                             num_workers=settings["workers"], drop_last=False)
     meta = {"experiment_id": c["experiment_id"], "variant": variant, "depth_sls": depth,
-            "seed": seed, "architecture": "Modules.model.UNet (scSE)", "initial_state_sha256": initial_hash,
+            "factors": CONDITIONS[variant], "seed": seed, "architecture": "Modules.model.UNet (scSE)", "initial_state_sha256": initial_hash,
             "input_scale": scale["input"], "target_scale": 1.0, "loss": settings["loss"],
             "torch": str(torch.__version__), "device": str(device), "dtype": "float32",
             "python": platform.python_version(), "numpy": np.__version__,

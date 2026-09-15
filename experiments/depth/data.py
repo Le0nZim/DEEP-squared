@@ -1,16 +1,24 @@
 """Lazy HDF5 reads and strict pairing; MATLAB writes dimensions in reverse order."""
+from contextlib import ExitStack
 from pathlib import Path
 
 import h5py
 import numpy as np
 import torch
 
-from .common import SPLITS, VARIANTS, dataset_path, read_json, write_json
+from .common import CONDITIONS, SPLITS, VARIANTS, dataset_path, read_json, write_json
+
+
+def text_attribute(f, key):
+    value = f.attrs.get(key)
+    # h5writeatt releases can produce fixed-length byte strings; h5py's own
+    # variable-length attributes decode to str. Accept both representations.
+    return value.decode("utf-8") if isinstance(value, bytes) else value
 
 
 def check_file(path, c, require_gt=True):
     with h5py.File(path, "r") as f:
-        if f.attrs.get("experiment_id") != c["experiment_id"]:
+        if text_attribute(f, "experiment_id") != c["experiment_id"]:
             raise ValueError(f"Wrong experiment identity: {path}")
         if not f.attrs.get("complete", 0):
             raise ValueError(f"Incomplete dataset: {path}; rerun prepare")
@@ -25,24 +33,44 @@ def check_file(path, c, require_gt=True):
         return ids
 
 
+def read_noise_schedule(c, variant, depth, split, n):
+    group_size = c["camera"]["legacy_batch_samples"] if CONDITIONS[variant]["camera"] == "legacy" else 1
+    groups = np.arange(n, dtype=np.int64) // group_size + 1
+    seeds = (c["data"]["seed"] + 700000000 + round(depth*100000) +
+             (SPLITS.index(split)+1)*1000000 + groups) % (2**32-1)
+    return groups, seeds
+
+
 def audit_pairs(c):
     reference_ids = {}
     for depth in c["depths_sls"]:
         for split in SPLITS:
-            a, b = [dataset_path(c, v, depth, split) for v in VARIANTS]
-            ids_a, ids_b = check_file(a, c), check_file(b, c)
-            if not np.array_equal(ids_a, ids_b):
-                raise ValueError(f"Unpaired object IDs: {a}, {b}")
+            paths = [dataset_path(c, v, depth, split) for v in VARIANTS]
+            all_ids = [check_file(p, c) for p in paths]
+            ids_a = all_ids[0]
+            if any(not np.array_equal(ids_a, ids) for ids in all_ids[1:]):
+                raise ValueError(f"Unpaired object IDs at {depth}, {split}")
             if len(ids_a) != c["data"]["counts"][split]:
-                raise ValueError(f"Unexpected sample count: {a}")
+                raise ValueError(f"Unexpected sample count: {paths[0]}")
             if split in reference_ids and not np.array_equal(reference_ids[split], ids_a):
                 raise ValueError("Object IDs must also match across depths")
             reference_ids[split] = ids_a
-            with h5py.File(a, "r") as fa, h5py.File(b, "r") as fb:
+            with ExitStack() as stack:
+                files = [stack.enter_context(h5py.File(p, "r")) for p in paths]
+                reference = stack.enter_context(h5py.File(dataset_path(c, "legacy", c["depths_sls"][0], split), "r"))
+                for variant, f in zip(VARIANTS, files):
+                    expected = {"variant": variant, **CONDITIONS[variant]}
+                    if any(text_attribute(f, key) != value for key, value in expected.items()):
+                        raise ValueError(f"Simulator factor metadata mismatch: {f.filename}")
+                    groups, seeds = read_noise_schedule(c, variant, depth, split, len(ids_a))
+                    for key, value in (("read_noise_group", groups), ("read_noise_seed", seeds)):
+                        if key not in f or not np.array_equal(np.asarray(f[key]).reshape(-1), value):
+                            raise ValueError(f"Incorrect {key}: {f.filename}")
                 for i in range(len(ids_a)):
-                    if not np.array_equal(fa["gt"][i], fb["gt"][i]):
-                        raise ValueError(f"Ground truth differs between PSF variants at {depth}, {split}, {i}")
-                    for f in (fa, fb):
+                    gt = reference["gt"][i]
+                    for f in files:
+                        if not np.array_equal(gt, f["gt"][i]):
+                            raise ValueError(f"Ground truth differs across conditions/depths at {depth}, {split}, {i}")
                         if not np.isfinite(f["input"][i]).all() or not np.isfinite(f["gt"][i]).all():
                             raise ValueError(f"Nonfinite data in {f.filename}")
                         if np.min(f["gt"][i]) < 0 or np.max(f["gt"][i]) > 1.00001:
@@ -67,11 +95,11 @@ def audit_pairs(c):
             if max(bounds[a][0], bounds[b][0]) <= min(bounds[a][1], bounds[b][1]):
                 raise ValueError(f"Source z-block leakage: {a}/{b}")
     write_json(Path(c["run_dir"]) / "pair_audit.json", {"passed": True, "source_z_bounds": bounds,
-               "checks": ["exact paired targets", "IDs across PSF variants and depths", "disjoint source z blocks", "finite data"]})
+               "checks": ["exact paired targets", "IDs across conditions and depths", "disjoint source z blocks", "camera factors and noise grouping", "finite data"]})
 
 
 def training_scales(c, depth):
-    """One input scale shared by both arms, estimated exclusively from training."""
+    """One input scale shared by all conditions, estimated exclusively from training."""
     paths = [dataset_path(c, variant, depth, "train") for variant in VARIANTS]
     signature = [[p.stat().st_size, p.stat().st_mtime_ns] for p in paths]
     cache = Path(c["run_dir"]) / "normalization" / f"{float(depth):g}sls.json"
@@ -86,7 +114,7 @@ def training_scales(c, depth):
                 maximum = max(maximum, float(np.max(f["input"][i])))
     if not np.isfinite(maximum) or maximum <= 0:
         raise ValueError("Nonpositive training normalization scale")
-    scales = {"input": maximum, "target": 1.0, "source": "maximum over both training arms only",
+    scales = {"input": maximum, "target": 1.0, "source": "maximum over all training conditions only",
               "training_file_stats": signature}
     write_json(cache, scales)
     return scales

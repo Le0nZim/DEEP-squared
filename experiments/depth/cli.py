@@ -10,19 +10,22 @@ import sys
 import urllib.request
 from pathlib import Path
 
-from .common import ASSETS, ROOT, configuration, file_hash, save_resolved, write_json
+from .common import ASSETS, ROOT, VARIANTS, configuration, file_hash, save_resolved, write_json
 
 
 def plan(c):
     n = len(c["depths_sls"])
     h = c["data"]["crop_size"] or 326
-    gib = 2*n*sum(c["data"]["counts"].values())*33*h*h*4/1024**3
+    gib = len(VARIANTS)*n*sum(c["data"]["counts"].values())*33*h*h*4/1024**3
     print(f"Run directory: {c['run_dir']}")
     print(f"Depths: {c['depths_sls']} SLS; {[d*50 for d in c['depths_sls']]} um at mus=200 cm^-1")
-    print(f"Trainings: {2*n*len(c['seeds'])} = 2 PSF versions x {n} depths x {len(c['seeds'])} seeds")
+    print(f"Trainings: {len(VARIANTS)*n*len(c['seeds'])} = 4 PSF/camera conditions x {n} depths x {len(c['seeds'])} seeds")
+    for name, factors in c["conditions"].items():
+        print(f"  {name}: PSFs={factors['psf']}, camera={factors['camera']}")
+    print(f"Legacy read noise: one scalar per {c['camera']['legacy_batch_samples']} generated samples (separate from training batch size)")
     print(f"{c['training']['epochs']} epochs; scSE-UNet; 32 patterns; loss={c['training']['loss']}; signal={c['signal_mode']}")
     print(f"Raw dataset estimate: {gib:.1f} GiB at {h}x{h} (compression can reduce it); plus PSFs and checkpoints")
-    print("Evaluation: old/corrected training x old/corrected test; same experimental FOVs where present")
+    print("Evaluation: all 16 train/test condition combinations; same experimental FOVs for all four models")
     return gib
 
 
@@ -117,8 +120,8 @@ def main(argv=None):
     p.add_argument("--device", default="cuda:0", help="PyTorch device; honors CUDA_VISIBLE_DEVICES")
     p.add_argument("--matlab", default="matlab", help="MATLAB executable name or path")
     args = p.parse_args(argv)
-    c = configuration(args.config)
     try:
+        c = configuration(args.config)
         if args.command == "plan":
             plan(c)
             return
@@ -128,6 +131,13 @@ def main(argv=None):
         save_resolved(c)
         if args.command == "run" and not shutil.which(args.matlab):
             raise RuntimeError("MATLAB not found. Run doctor and use the documented MATLAB workstation; no training was launched.")
+        if args.command in ("run", "train", "evaluate"):
+            import torch
+            device = torch.device(args.device)
+            # Fail before downloading/generating days of data on a bad setup.
+            if device.type == "cuda" and (not torch.cuda.is_available() or
+                    (device.index or 0) >= torch.cuda.device_count()):
+                raise RuntimeError("Requested CUDA device unavailable; fix PyTorch/visibility or explicitly select --device cpu")
         if args.command in ("download", "run"):
             download(c)
         if args.command in ("prepare", "run"):

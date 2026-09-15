@@ -1,10 +1,11 @@
 function intensity = depth_optical_intensity(o, wavelength, dx, nx, nz, use_gpu)
-% Memory-bounded evaluation of Efficient_PSF.m; preserve its sampling exactly.
+% Memory-bounded evaluation of Efficient_PSF.m with a consistent optical axis.
 alpha = asin(o.na/o.nm);
 theta = (0:o.theta_samples-1) * alpha/o.theta_samples;
-axis_xy = dx*(-nx/2:nx/2-1);
+axis_xy = dx*(-floor(nx/2):ceil(nx/2)-1);
 z = dx*(-nz/2:nz/2-1);
-phi = calculate_phi(nx);
+[px,py] = meshgrid(axis_xy,axis_xy);
+phi = atan2(-py,px); % Radius and azimuth must use the same coordinates.
 A = pi/wavelength;
 intensity = zeros(nx,nx,nz,'single');
 for first = 1:o.row_chunk:nx

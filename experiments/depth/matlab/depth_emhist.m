@@ -1,14 +1,15 @@
 function table=depth_emhist(p,max_count)
 % Finite empirical conditional distribution, like upstream emhist; no count cap.
 persistent cache_key cached_table
-key=sprintf('stages%d_alpha%.8g',p.cam_N_gainStages,p.cam_Brnuli_alpha);
+state=rng; cleanup=onCleanup(@() rng(state)); %#ok<NASGU>
+key=sprintf('stages%d_alpha%.17g_trials%d',p.cam_N_gainStages,p.cam_Brnuli_alpha,p.emhist_trials);
 if isempty(cache_key) || ~strcmp(cache_key,[p.emhist_dir key])
     if ~isfolder(p.emhist_dir), mkdir(p.emhist_dir); end
     file=fullfile(p.emhist_dir,[key '.mat']);
     if isfile(file)
         s=load(file,'table'); cached_table=s.table;
     else
-        cached_table=zeros(0,10000);
+        cached_table=zeros(0,p.emhist_trials);
     end
     cache_key=[p.emhist_dir key];
 end
@@ -17,7 +18,7 @@ if max_count<=size(table,1), return; end
 first=size(table,1)+1;
 for n=first:max_count
     rng(mod(271828+p.cam_N_gainStages*10000+n,2^32-1),'twister');
-    row=n*ones(1,10000);
+    row=n*ones(1,p.emhist_trials);
     for stage=1:p.cam_N_gainStages
         row=row+binornd(row,p.cam_Brnuli_alpha);
     end

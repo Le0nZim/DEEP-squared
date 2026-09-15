@@ -9,9 +9,10 @@ X=X(1:size(ex,1),1:size(ex,2),:);
 X=gpuArray(X); ex=gpuArray(ex); em=gpuArray(em); sc=gpuArray(sc);
 yr=round(size(ex,1)/2-pram.Ny/2)+1:round(size(ex,1)/2+pram.Ny/2);
 xr=round(size(ex,2)/2-pram.Nx/2)+1:round(size(ex,2)/2+pram.Nx/2);
-zr=round(size(ex,3)/2-1/2)+1; % upstream focal index for odd/even volumes
+zr=ceil(size(ex,3)/2); % Match f_fwd3D exactly, including even axial sizes.
 target=f_conv3nd(ex,X,'same');
 target=gather(target(yr,xr,zr));
+assert(all(isfinite(target(:))) && max(target(:))>0,'Invalid/blank ground truth');
 gt=single(target/max(target(:))); % one target shared across depth/PSF arms
 Y0=zeros(pram.Ny,pram.Nx,pram.Nt,'single');
 for pattern=1:pram.Nt

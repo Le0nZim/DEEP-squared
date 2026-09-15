@@ -1,7 +1,7 @@
 function PSFs = depth_optics(c, pram)
-% Shared optical PSFs: same equations/grids as upstream Efficient_PSF,
+% Shared optical PSFs: same equations and corrected coordinates as Efficient_PSF,
 % evaluated in small row blocks without retaining three full complex volumes.
-% This experiment changes scattering transport, not the optical Debye model.
+% Coordinate consistency is repaired in common; Debye wavelength convention is retained.
 cache = fullfile(c.run_dir,'psfs','optics.mat');
 if isfile(cache)
     s = load(cache,'PSFs'); PSFs = s.PSFs; return
@@ -22,7 +22,7 @@ em = em / max(squeeze(sum(sum(em,1),2)));
 PSFs.emPSF = em(:,:,zrange); clear em
 PSFs.pram.dx = dx;
 PSFs.z_offsets_um = (-half:half)*dx;
-PSFs.description = 'Shared upstream vectorial Debye equations; two-photon excitation intensity squared';
+PSFs.description = 'Shared Debye equations, consistent radial/azimuthal coordinates; two-photon excitation intensity squared';
 temp = [cache '.partial.mat']; save(temp,'PSFs','-v7.3'); movefile(temp,cache,'f');
 end
 

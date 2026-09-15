@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/Le0nZim/DEEP-squared",
+  "commit": "b2be9c6e1b1d0e9b48711ff0a302f716eeac07e1",
+  "source_path": "fwd_model/f_simulateIm_emCCD.m",
+  "files": {
+    "f_simulateIm_emCCD.m": "3314d1b9041bd5fdf5ef848f3ca05e1a7e82165f8cd776f817befab71d5770ae"
+  },
+  "lut_path": "fwd_model/_emhist/emhist_29-Apr-2021_02_09_25.mat",
+  "lut_sha256": "fef82ca16094f1e37d207fc2a48496247347e0f7772aeec906e60015e1e2e5a8",
+  "note": "Preserve byte-exact legacy camera. Its supplied numeric LUT has 100 rows, 10000 trials, and no gain metadata. Only the declared legacy-camera conditions may use it."
+}

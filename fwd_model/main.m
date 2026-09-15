@@ -51,7 +51,7 @@ switch pram.sim2dOr3d
         pram.dz = pram.dx; 
 
         % load emhist (for camera noise model)
-        load('./_emhist/emhist_29-Apr-2021_02_09_25.mat');  % upt to 100 photons
+        emhist = f_genEmhist(100,pram.cam_emhist_Nreps,pram); % gain-tagged; overflow uses direct EM
         
         %%% simulate training data
         pram.Nz     = 100;
@@ -73,7 +73,7 @@ switch pram.sim2dOr3d
           disp(j)
           X0                      = f_genobj_beads3D_1um_4um(N_beads,pram);
          [Yhat Xgt]               = f_fwd3D(X0,E,PSFs,emhist,pram);
-          if Yhat == 0 | Xgt == 0 
+          if isempty(Yhat) || isempty(Xgt)
             continue 
           end
           Nmb                     = size(Xgt,4);
@@ -94,7 +94,7 @@ switch pram.sim2dOr3d
       case 'mouse_neuronal_100um'
         
         % load emhist (for camera noise model)
-        load('./_emhist/emhist_29-Apr-2021_02_09_25.mat');  % upt to 100 photons
+        emhist = f_genEmhist(100,pram.cam_emhist_Nreps,pram); % gain-tagged; overflow uses direct EM
         
         clear DataIn DataGt
         DataIn = zeros(pram.Ny,pram.Nx,pram.Nt,pram.Nb,'single');
@@ -133,7 +133,7 @@ switch pram.sim2dOr3d
       case 'mouse_neuronal_300um'
 
         % load emhist (for camera noise model)
-        load('./_emhist/emhist_29-Apr-2021_02_09_25.mat');  % upt to 100 photons
+        emhist = f_genEmhist(100,pram.cam_emhist_Nreps,pram); % gain-tagged; overflow uses direct EM
         
         clear DataIn DataGt
         DataIn = zeros(pram.Ny,pram.Nx,pram.Nt,pram.Nb,'single');
@@ -179,7 +179,7 @@ switch pram.sim2dOr3d
         pram.dist           = 1;
         
         % load emhist (for camera noise model)
-        load('./_emhist/emhist_29-Apr-2021_02_09_25.mat');  % upt to 100 photons
+        emhist = f_genEmhist(100,pram.cam_emhist_Nreps,pram); % gain-tagged; overflow uses direct EM
         
         clear DataIn DataGt
         DataIn = zeros(pram.Ny,pram.Nx,pram.Nt,pram.Nb,'single');
@@ -224,7 +224,7 @@ switch pram.sim2dOr3d
         pram.dist           = 1;
         
         % load emhist (for camera noise model)
-        load('./_emhist/emhist_29-Apr-2021_02_09_25.mat');  % upt to 100 photons
+        emhist = f_genEmhist(100,pram.cam_emhist_Nreps,pram); % gain-tagged; overflow uses direct EM
         
         clear DataIn DataGt
         DataIn = zeros(pram.Ny,pram.Nx,pram.Nt,pram.Nb,'single');
@@ -268,7 +268,7 @@ switch pram.sim2dOr3d
         pram.z0_um          = -6*pram.sl;                          % [um] depth (z=0 is the surface and -ve is below), set for beads
         
         % load emhist (for camera noise model)
-        load('./_emhist/emhist_29-Apr-2021_02_09_25.mat');  % upt to 100 photons
+        emhist = f_genEmhist(100,pram.cam_emhist_Nreps,pram); % gain-tagged; overflow uses direct EM
         
         clear DataIn DataGt
         DataIn = zeros(pram.Ny,pram.Nx,pram.Nt,pram.Nb,'single');
@@ -324,8 +324,8 @@ DataGt_test   = DataGt(:,:,:,1:128);
 fileNameStem  = [saveDir nameStem '_test.h5'];
 f_writeDataset_hdf5(fileNameStem,DataIn_test,DataGt_test);
 
-DataIn        = DataIn(:,:,:,128:end);
-DataGt        = DataGt(:,:,:,128:end);
+DataIn        = DataIn(:,:,:,129:end);
+DataGt        = DataGt(:,:,:,129:end);
 fileNameStem  = [saveDir nameStem '_tr.h5'];
 f_writeDataset_hdf5(fileNameStem,DataIn,DataGt);
 

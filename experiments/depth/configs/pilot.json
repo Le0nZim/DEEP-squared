@@ -66,5 +66,27 @@
   "extension": {
     "unmeasured_peak_reference_sls": 8,
     "note": "At 10 SLS, paper_peak holds the measured 8-SLS peak and camera settings; this is an optimistic brightness-controlled assumption, not a measured 500-um SNR."
+  },
+  "conditions": {
+    "legacy": {
+      "psf": "legacy",
+      "camera": "legacy"
+    },
+    "psf_only": {
+      "psf": "corrected",
+      "camera": "legacy"
+    },
+    "camera_only": {
+      "psf": "legacy",
+      "camera": "corrected"
+    },
+    "corrected": {
+      "psf": "corrected",
+      "camera": "corrected"
+    }
+  },
+  "camera": {
+    "legacy_batch_samples": 16,
+    "lut_trials": 10000
   }
 }

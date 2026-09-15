@@ -2,13 +2,15 @@
 
 Official implementation of "DEEP-squared: deep learning powered De-scattering with Excitation Patterning" (Light: Science & Applications, 2023).
 
-## Controlled old/new PSF depth comparison
+## Controlled PSF and camera depth comparison
 
 See **[the depth-study instructions](experiments/depth/README.md)** for automated
-setup, original/corrected MATLAB PSF generation, paired training of the original
+setup, original/corrected MATLAB PSF and camera simulation, paired training of the original
 DEEP2 scSE-UNet at **2/4/6/8/10 scattering lengths**, cross-simulator evaluation,
 shared experimental reconstructions, resumable jobs, and comparison reports.
-Agent instructions are in [AGENTS.md](AGENTS.md).
+The four conditions separate original, PSF-only, camera-only and combined fixes.
+Read the [camera/pipeline audit](fwd_model/CAMERA_AND_PIPELINE_AUDIT.md) for the
+read-noise bug and other corrections. Agent instructions are in [AGENTS.md](AGENTS.md).
 
 ```bash
 bash experiments/depth/setup.sh

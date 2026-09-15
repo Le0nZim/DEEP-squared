@@ -25,7 +25,7 @@ if strcmp(c.signal_mode,'fixed_source')
         s=load(calibration,'source_gain'); source_gain=s.source_gain;
     else
         % One fixed gain: median peak of first 16 TRAINING objects under old
-        % PSFs at 2 SLS. Applied unchanged at all depths and to both variants.
+        % PSFs at 2 SLS. Applied unchanged at all depths and to every condition.
         [P,~]=depth_psfs(c,base,optical,'legacy',2,'train');
         P=depth_prepare_forward(P,E,base);
         n=min(16,c.data.counts.train); peaks=zeros(n,1);
@@ -55,6 +55,7 @@ for depth=c.depths_sls(:)'
     assert(isequal(Ed,E),'Pattern identity changed across depths');
     pram.z0_um=-um; % Never overwrite requested depth with a calibration depth.
     pram.emhist_dir=fullfile(c.run_dir,'camera_lut');
+    pram.emhist_trials=c.camera.lut_trials; pram.repo_root=c.repo_root;
     if available
         write_experimental(c,depth,Yexp,pram,yr,xr);
     end
@@ -65,16 +66,17 @@ for depth=c.depths_sls(:)'
     file=fullfile(c.run_dir,'calibration',sprintf('%gsls.json',depth));
     if ~isfolder(fileparts(file)), mkdir(fileparts(file)); end
     fid=fopen(file,'w'); fprintf(fid,'%s\n',jsonencode(info)); fclose(fid);
-    variants={'legacy','corrected'};
-    for arm=1:2
+    variants=fieldnames(c.conditions);
+    for arm=1:numel(variants)
         variant=variants{arm};
-        [P,~]=depth_psfs(c,pram,optical,variant,depth,'train');
+        psf_variant=c.conditions.(variant).psf;
+        [P,~]=depth_psfs(c,pram,optical,psf_variant,depth,'train');
         P=depth_prepare_forward(P,E,pram);
         depth_write_data(c,pram,E,P,manifest,variant,depth,'train',source_gain);
         depth_write_data(c,pram,E,P,manifest,variant,depth,'val',source_gain);
         if c.mc.independent_test_psfs
             clear P
-            [P,~]=depth_psfs(c,pram,optical,variant,depth,'test');
+            [P,~]=depth_psfs(c,pram,optical,psf_variant,depth,'test');
             P=depth_prepare_forward(P,E,pram);
         end
         depth_write_data(c,pram,E,P,manifest,variant,depth,'test',source_gain);

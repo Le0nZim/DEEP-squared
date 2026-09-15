@@ -8,7 +8,13 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-VARIANTS = ("legacy", "corrected")
+CONDITIONS = {
+    "legacy": {"psf": "legacy", "camera": "legacy"},
+    "psf_only": {"psf": "corrected", "camera": "legacy"},
+    "camera_only": {"psf": "legacy", "camera": "corrected"},
+    "corrected": {"psf": "corrected", "camera": "corrected"},
+}
+VARIANTS = tuple(CONDITIONS)
 SPLITS = ("train", "val", "test")
 ASSETS = {
     "BV_03102021.mat": "213e005f11eec07907a62c15cd5e1898",
@@ -41,11 +47,25 @@ def source_hashes():
     paths += list((ROOT / "experiments/depth").rglob("*.py"))
     paths += list((ROOT / "experiments/depth/matlab").rglob("*.m"))
     paths += list((ROOT / "fwd_model").rglob("*.m"))
+    paths += list((ROOT / "experiments/depth/matlab").rglob("PROVENANCE.json"))
+    paths += [ROOT / "fwd_model/_emhist/emhist_29-Apr-2021_02_09_25.mat"]
     paths = [p for p in paths if "tests" not in p.parts]
     return {p.relative_to(ROOT).as_posix(): file_hash(p) for p in sorted(set(paths))}
 
 
+def verify_frozen_sources():
+    for name in ("legacy_mc", "legacy_camera"):
+        folder = ROOT / "experiments/depth/matlab" / f"+{name}"
+        manifest = read_json(folder / "PROVENANCE.json")
+        for file, expected in manifest["files"].items():
+            if file_hash(folder / file) != expected:
+                raise ValueError(f"Frozen legacy source changed: {folder/file}")
+        if "lut_path" in manifest and file_hash(ROOT / manifest["lut_path"]) != manifest["lut_sha256"]:
+            raise ValueError("Frozen legacy camera table changed")
+
+
 def configuration(path):
+    verify_frozen_sources()
     c = read_json(path)
     required = {"name", "data_dir", "output_dir", "depths_sls", "seeds", "data", "mc", "optics", "training", "signal_mode", "extension", "evaluation"}
     missing = required - c.keys()
@@ -53,6 +73,13 @@ def configuration(path):
         raise ValueError(f"Missing configuration fields: {sorted(missing)}")
     if c["signal_mode"] not in ("paper_peak", "fixed_source"):
         raise ValueError("signal_mode must be paper_peak or fixed_source")
+    if c.get("conditions") != CONDITIONS:
+        raise ValueError("Use all four explicit PSF/camera conditions from the updated supplied configs")
+    camera = c.get("camera", {})
+    for key in ("legacy_batch_samples", "lut_trials"):
+        value = camera.get(key)
+        if type(value) is not int or value < 1:
+            raise ValueError(f"camera.{key} must be a positive integer")
     depths = c["depths_sls"]
     if not depths or len(depths) != len(set(depths)) or any(d <= 0 for d in depths):
         raise ValueError("depths_sls must contain unique positive depths")

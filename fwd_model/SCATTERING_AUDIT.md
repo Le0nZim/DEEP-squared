@@ -1,3 +1,6 @@
+Additional camera and pipeline corrections are documented in
+[CAMERA_AND_PIPELINE_AUDIT.md](CAMERA_AND_PIPELINE_AUDIT.md).
+
 # Monte Carlo scattering audit and corrections
 
 ## Scope and source revisions

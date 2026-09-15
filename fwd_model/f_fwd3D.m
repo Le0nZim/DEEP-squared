@@ -44,7 +44,7 @@ function [Yhat Xgt] = f_fwd3D(X0,E,PSFs,emhist,pram)
   Eex_3D    = f_conv3nd(exPSF,E,'same');
   
   vol_Nz    = size(exPSF,3);
-  vol_inits = [1:pram.dist:size(X0,3)-vol_Nz];
+  vol_inits = [1:pram.dist:size(X0,3)-vol_Nz+1];
   
   
   Nb        = length(vol_inits);
@@ -53,7 +53,7 @@ function [Yhat Xgt] = f_fwd3D(X0,E,PSFs,emhist,pram)
 
   for b = 1:Nb
     X0_vol  = X0(:,:,vol_inits(b):vol_inits(b)+vol_Nz-1);
-    if mean(X0_vol(:))>meanX0
+    if mean(X0_vol(:))>=meanX0 && any(X0_vol(:)>0)
       vol_inits_valid(b_t) = vol_inits(b);
       b_t   = b_t+1;
     end
@@ -66,7 +66,9 @@ function [Yhat Xgt] = f_fwd3D(X0,E,PSFs,emhist,pram)
     for b = 1:Nb
        % b
       X0_vol  = X0(:,:,vol_inits(b):vol_inits(b)+vol_Nz-1);
-      X0_vol  = imrotate(X0_vol,90*rem(b,4));
+      turns=rem(b,4);
+      if size(X0_vol,1)~=size(X0_vol,2), turns=2*rem(b,2); end
+      X0_vol=rot90(X0_vol,turns); % preserve rectangular array dimensions
       X_ex    = Eex_3D .* X0_vol;
     
       for j=1:size(X_ex,4)                              % using the loop in the function is slow for some reason
@@ -81,7 +83,7 @@ function [Yhat Xgt] = f_fwd3D(X0,E,PSFs,emhist,pram)
       Xgt_3D    = f_conv3nd(exPSF,X0_vol,'same');
   
       %% postprocess (cropping)
-      y_range   = round(size(X_em,1)/2 - pram.Nx/2)+1:round(size(X_em,1)/2 + pram.Nx/2);
+      y_range   = round(size(X_em,1)/2 - pram.Ny/2)+1:round(size(X_em,1)/2 + pram.Ny/2);
       x_range   = round(size(X_em,2)/2 - pram.Nx/2)+1:round(size(X_em,2)/2 + pram.Nx/2);
 
 
@@ -91,6 +93,7 @@ function [Yhat Xgt] = f_fwd3D(X0,E,PSFs,emhist,pram)
 
     %% match experimental counts (refer to f_get_extPettern and f_read_data on the original data folder)
    
+      assert(max(Y0(:))>0 && max(Xgt(:))>0,'DEEP2:BlankForward','Cannot peak-normalize a blank forward image');
       Y0        = double(pram.maxcount*Y0/max(Y0(:)));
       Xgt       = double(pram.maxcount*Xgt/max(Xgt(:)));
 
@@ -105,7 +108,7 @@ function [Yhat Xgt] = f_fwd3D(X0,E,PSFs,emhist,pram)
     Xgt       = reshape(Xgt_all ,[pram.Ny pram.Nx 1       Nb]);
     Yhat      = reshape(Yhat_all,[pram.Ny pram.Nx pram.Nt Nb]);
   else
-    Xgt = 0
-    Yhat = 0  
+    Xgt = zeros(pram.Ny,pram.Nx,1,0,'single');
+    Yhat = zeros(pram.Ny,pram.Nx,pram.Nt,0,'single');
   end 
 end

@@ -1,4 +1,4 @@
-"""Evaluate both training arms on each identical test stack; no test-time fitting."""
+"""Evaluate all training conditions on each identical test stack; no test-time fitting."""
 import csv
 from pathlib import Path
 
@@ -8,7 +8,7 @@ import torch
 from skimage.metrics import structural_similarity
 
 from Modules.model import UNet
-from .common import VARIANTS, checkpoint_dir, dataset_path, depth_tag, read_json, write_json
+from .common import CONDITIONS, VARIANTS, checkpoint_dir, dataset_path, depth_tag, read_json, write_json
 from .data import MeasurementDataset, check_file
 
 
@@ -59,7 +59,8 @@ def evaluate_all(c, device):
                             pred = model(x[None].to(device))[0, 0].cpu().numpy()
                             if not np.isfinite(pred).all():
                                 raise FloatingPointError(f"Nonfinite prediction: {checkpoint}")
-                            row = {"depth_sls": depth, "depth_um": depth * 50, "train_psf": variant,
+                            row = {"depth_sls": depth, "depth_um": depth * 50, "train_condition": variant,
+                                   "train_psf": CONDITIONS[variant]["psf"], "train_camera": CONDITIONS[variant]["camera"],
                                    "test_domain": domain, "seed": seed, "sample_id": int(ids[i]),
                                    "has_ground_truth": int(data.has_gt)}
                             if data.has_gt:
@@ -73,7 +74,7 @@ def evaluate_all(c, device):
                                         sample_id=ids[:len(predictions)])
                     data.close()
                     print(f"EVALUATED {stem}: {len(ids)} samples", flush=True)
-    fields = ["depth_sls", "depth_um", "train_psf", "test_domain", "seed", "sample_id",
+    fields = ["depth_sls", "depth_um", "train_condition", "train_psf", "train_camera", "test_domain", "seed", "sample_id",
               "has_ground_truth", "mse", "psnr", "ssim"]
     with open(out / "per_sample.csv", "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fields)
